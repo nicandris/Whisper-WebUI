@@ -53,11 +53,17 @@ RUN ( \
 
 FROM python:3.11-slim AS runtime
 
-# Install only runtime dependencies (no git, no build tools)
+# Install runtime dependencies including Intel GPU libraries
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
-    apt-get install -y --no-install-recommends ffmpeg && \
+    apt-get install -y --no-install-recommends \
+        ffmpeg \
+        libdrm2 \
+        libdrm-intel1 \
+        libgl1-mesa-dri \
+        libglib2.0-0 \
+        && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -75,5 +81,9 @@ VOLUME [ "/Whisper-WebUI/outputs" ]
 
 # Set environment variables for the runtime
 ENV PATH="/Whisper-WebUI/venv/bin:$PATH"
+# Intel XPU environment variables
+ENV SYCL_CACHE_PERSISTENT=1
+ENV ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
+ENV SYCL_DEVICE_FILTER=level_zero:gpu
 
 ENTRYPOINT [ "python", "app.py" ]

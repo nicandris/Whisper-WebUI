@@ -22,8 +22,15 @@ services:
 
     entrypoint: ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
-    # Intel Arc XPU support (no special Docker GPU configuration needed)
-    # For NVIDIA GPU support, uncomment the section below:
+    # Intel Arc XPU support - mount render devices for GPU access
+    devices:
+      - /dev/dri:/dev/dri
+    # Set group ID for render devices (usually 44 or 107)
+    group_add:
+      - "44"  # render group (adjust if different on your system)
+      - "107" # video group (adjust if different on your system)
+    
+    # For NVIDIA GPU support, uncomment the section below instead:
     # See more info at : https://docs.docker.com/compose/compose-file/deploy/#driver
     # deploy:
     #   resources:

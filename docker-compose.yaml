@@ -1,32 +1,32 @@
+name: whisper
 services:
-  whisper-webui:
-    container_name: whisper-webui
-    # build: .
-    image: whisper-webui:latest
-
+  whisper:
+    image: ghcr.io/nicandris/whisper-webui:latest
+    container_name: whisper
+    hostname: whisper
+    dns:
+      - 172.10.10.3
     volumes:
-      # You can mount the container's volume paths to directory paths on your local machine.
-      # Models will be stored in the `./models' directory on your machine.
-      # Similarly, all output files will be stored in the `./outputs` directory.
       - ./models:/Whisper-WebUI/models
       - ./outputs:/Whisper-WebUI/outputs
       - ./configs:/Whisper-WebUI/configs
-
-    ports:
-      - "7860:7860"
-
+      - ./requirements.txt:/Whisper-WebUI/requirements.txt
+      # - /dev/dri/renderD128:/dev/dri/renderD128
+    environment:
+      - XPU_VISIBLE_DEVICES=0
+      - SYCL_CACHE_PERSISTENT=1
+      - ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
+      - SYCL_DEVICE_FILTER=level_zero:gpu
+      - ZE_ENABLE_PCI_ID_DEVICE_ORDER=1
+    devices:
+      - /dev/dri:/dev/dri
+    restart: unless-stopped
     stdin_open: true
     tty: true
+    ipc: host
+    privileged: true
+    group_add: 
+      - 109
+      - 44
+    entrypoint: ["python", "app.py", "--server_port", "7860", "--server_name", "0.0.0.0", "--whisper_type", "insanely_fast_whisper"]
 
-    entrypoint: ["python", "app.py", "--server_port", "7860", "--server_name", "0.0.0.0",  "--whisper_type", "insanely_fast_whisper",]
-
-    # Intel Arc XPU support (no special Docker GPU configuration needed)
-    # For NVIDIA GPU support, uncomment the section below:
-    # See more info at : https://docs.docker.com/compose/compose-file/deploy/#driver
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [ gpu ]
