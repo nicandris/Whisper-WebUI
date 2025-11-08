@@ -11,14 +11,21 @@ WORKDIR /Whisper-WebUI
 COPY requirements.txt .
 
 # 2. Install dependencies into venv
+# Use --no-cache-dir to prevent pip cache from accumulating in this layer
 RUN python3 -m venv venv && \
     . venv/bin/activate && \
-    pip install -U -r requirements.txt
+    pip install --no-cache-dir -U -r requirements.txt
 
-# --- OPTIMIZATION: Clean up the venv before copying it ---
+# --- AGGRESSIVE OPTIMIZATION: Clean up the venv before copying it ---
 RUN find venv \( -name '*.pyc' -o -name '*.pyo' \) -delete && \
     find venv -name '__pycache__' -type d -exec rm -r {} + && \
-    find venv -wholename 'venv/lib/python*/site-packages/*.dist-info' -type d -prune -exec rm -rf {} +
+    find venv -wholename 'venv/lib/python*/site-packages/*.dist-info' -type d -prune -exec rm -rf {} + && \
+    \
+    # Aggressive Cleanup: Remove unnecessary files that bloat library sizes (tests, docs, headers)
+    find venv -type f -name '*.a' -delete && \
+    find venv -type f -name 'test*' -delete && \
+    find venv -type d -name 'test*' -exec rm -rf {} + && \
+    find venv -type d -name 'doc' -exec rm -rf {} +
 # --------------------------------------------------------
 
 
@@ -33,7 +40,7 @@ WORKDIR /Whisper-WebUI
 
 # 4. Copy application source code
 COPY . .
-# 5. Copy cleaned virtual environment
+# 5. Copy cleaned virtual environment (This is the critical line that needs less data)
 COPY --from=builder /Whisper-WebUI/venv /Whisper-WebUI/venv
 
 # Volumes for persistent storage outside the container layers
