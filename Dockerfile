@@ -21,11 +21,13 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --upgrade pip setuptools wheel && \
     pip install -r requirements.txt
 
-# 4. Clean up venv (optimized single pass)
-RUN . venv/bin/activate && \
-    find venv -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true && \
-    find venv -type f -name '*.pyc' -delete 2>/dev/null || true && \
-    find venv -type f -name '*.pyo' -delete 2>/dev/null || true
+# 4. Clean up venv (suppress all error messages)
+RUN ( \
+    . venv/bin/activate 2>/dev/null || true; \
+    find venv -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true; \
+    find venv -type f -name '*.pyc' -delete 2>/dev/null || true; \
+    find venv -type f -name '*.pyo' -delete 2>/dev/null || true; \
+    ) 2>/dev/null || true
 
 
 FROM debian:bookworm-slim AS runtime
