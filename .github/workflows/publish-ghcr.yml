@@ -25,6 +25,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Clean up disk space
+        run: |
+          echo "Cleaning up disk space..."
+          # Remove unnecessary packages and clean apt cache
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          # Clean Docker system
+          docker system prune -af --volumes || true
+          # Clean up any leftover build artifacts
+          sudo rm -rf /tmp/* || true
+          df -h
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -52,7 +67,9 @@ jobs:
             echo "IS_RELEASE=false" >> $GITHUB_ENV
           fi
           
-          echo "REPO_OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+          # Convert repository owner to lowercase using tr (more reliable than bash parameter expansion)
+          REPO_OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "REPO_OWNER_LC=$REPO_OWNER_LC" >> $GITHUB_ENV
 
       - name: Set Dockerfile path
         id: dockerfile
@@ -74,6 +91,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image (version tag)
+        id: build
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -81,6 +99,16 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ env.REPO_OWNER_LC }}/${{ matrix.name }}:${{ env.GIT_TAG }}
+          # Use inline cache to avoid storing separate cache layers
+          cache-to: type=inline
+
+      - name: Clean up Docker build cache
+        if: always()
+        run: |
+          echo "Cleaning up Docker build cache..."
+          docker builder prune -af || true
+          docker image prune -af || true
+          docker system df
 
       - name: Tag and push as latest (if release)
         if: env.IS_RELEASE == 'true'
@@ -89,3 +117,12 @@ jobs:
           docker tag ghcr.io/${{ env.REPO_OWNER_LC }}/${{ matrix.name }}:${{ env.GIT_TAG }} \
                      ghcr.io/${{ env.REPO_OWNER_LC }}/${{ matrix.name }}:latest
           docker push ghcr.io/${{ env.REPO_OWNER_LC }}/${{ matrix.name }}:latest
+          # Clean up pulled image to free space
+          docker rmi ghcr.io/${{ env.REPO_OWNER_LC }}/${{ matrix.name }}:${{ env.GIT_TAG }} || true
+
+      - name: Final cleanup
+        if: always()
+        run: |
+          echo "Final cleanup..."
+          docker system prune -af --volumes || true
+          df -h

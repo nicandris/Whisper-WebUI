@@ -1,8 +1,8 @@
 services:
   whisper-webui:
     container_name: whisper-webui
-    build: .
-    image: jhj0517/whisper-webui:latest
+    # build: .
+    image: whisper-webui:latest
 
     volumes:
       # You can mount the container's volume paths to directory paths on your local machine.
@@ -18,7 +18,7 @@ services:
     stdin_open: true
     tty: true
 
-    entrypoint: ["python", "app.py", "--server_port", "7860", "--server_name", "0.0.0.0",]
+    entrypoint: ["python", "app.py", "--server_port", "7860", "--server_name", "0.0.0.0",  "--whisper_type", "insanely_fast_whisper",]
 
     # If you're not using nvidia GPU, Update device to match yours.
     # See more info at : https://docs.docker.com/compose/compose-file/deploy/#driver
