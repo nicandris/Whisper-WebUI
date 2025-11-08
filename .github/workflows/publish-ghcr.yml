@@ -19,7 +19,7 @@ jobs:
 
     strategy:
       matrix:
-        name: [whisper-webui, whisper-webui-backend]
+        name: [whisper-webui]
 
     steps:
       - name: Checkout repository
@@ -80,12 +80,5 @@ jobs:
           file: ${{ env.DOCKERFILE }}
           push: true
           tags: |
-            ghcr.io/${{ env.REPO_OWNER_LC }}/${{ matrix.name }}:${{ env.GIT_TAG }}
-
-      - name: Tag and push as latest (if release)
-        if: env.IS_RELEASE == 'true'
-        run: |
-          docker pull ghcr.io/${{ env.REPO_OWNER_LC }}/${{ matrix.name }}:${{ env.GIT_TAG }}
-          docker tag ghcr.io/${{ env.REPO_OWNER_LC }}/${{ matrix.name }}:${{ env.GIT_TAG }} \
-                     ghcr.io/${{ env.REPO_OWNER_LC }}/${{ matrix.name }}:latest
-          docker push ghcr.io/${{ env.REPO_OWNER_LC }}/${{ matrix.name }}:latest
+            ghcr.io/${{ env.REPO_OWNER_LC }}/${{ matrix.name }}:${{ env.GIT_TAG }} \
+            ghcr.io/${{ env.REPO_OWNER_LC }}/${{ matrix.name }}:latest
