@@ -19,7 +19,10 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     python3 -m venv venv && \
     . venv/bin/activate && \
     pip install --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    # Verify critical packages are installed \
+    python -c "import gradio; print(f'gradio {gradio.__version__} installed')" && \
+    python -c "import torch; print(f'torch {torch.__version__} installed')"
 
 # 4. Aggressively clean up venv to reduce image size
 RUN ( \
@@ -72,6 +75,9 @@ WORKDIR /Whisper-WebUI
 # Copy venv first (changes less frequently than source code)
 COPY --from=builder /Whisper-WebUI/venv /Whisper-WebUI/venv
 
+# Verify venv was copied correctly
+RUN /Whisper-WebUI/venv/bin/python -c "import gradio; print('gradio verified in runtime')" || (echo "ERROR: gradio not found in venv" && exit 1)
+
 # Copy application source code last (changes most frequently)
 COPY . .
 
@@ -86,4 +92,4 @@ ENV SYCL_CACHE_PERSISTENT=1
 ENV ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
 ENV SYCL_DEVICE_FILTER=level_zero:gpu
 
-ENTRYPOINT [ "python", "app.py" ]
+ENTRYPOINT [ "/Whisper-WebUI/venv/bin/python", "app.py" ]

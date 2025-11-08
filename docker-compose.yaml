@@ -10,7 +10,6 @@ services:
       - ./models:/Whisper-WebUI/models
       - ./outputs:/Whisper-WebUI/outputs
       - ./configs:/Whisper-WebUI/configs
-      - ./requirements.txt:/Whisper-WebUI/requirements.txt
       # - /dev/dri/renderD128:/dev/dri/renderD128
     environment:
       - XPU_VISIBLE_DEVICES=0
@@ -28,5 +27,5 @@ services:
     group_add: 
       - 109
       - 44
-    entrypoint: ["python", "app.py", "--server_port", "7860", "--server_name", "0.0.0.0", "--whisper_type", "insanely_fast_whisper"]
+    entrypoint: ["/Whisper-WebUI/venv/bin/python", "app.py", "--server_port", "7860", "--server_name", "0.0.0.0", "--whisper_type", "insanely_fast_whisper"]
 
