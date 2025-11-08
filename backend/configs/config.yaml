@@ -1,7 +1,7 @@
 whisper:
   # Default implementation is faster-whisper. This indicates model name within `models\Whisper\faster-whisper`
   model_size: large-v2
-  # Compute type. 'float16' for CUDA, 'float32' for CPU.
+  # Compute type. 'float16' for CUDA/XPU, 'float32' for CPU.
   compute_type: float16
   # Whether to offload the model after the inference.
   enable_offload: true
@@ -12,7 +12,7 @@ bgm_separation:
   # Whether to offload the model after the inference. Should be true if your setup has a VRAM less than <16GB
   enable_offload: true
   # Device to load BGM separation model between ["cuda", "cpu", "xpu"]
-  device: cuda
+  device: xpu
 
 # Settings that apply to the `cache' directory. The output files for `/bgm-separation` are stored in the `cache' directory,
 # (You can check out the actual generated files by testing `/bgm-separation`.)

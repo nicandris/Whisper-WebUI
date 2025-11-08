@@ -1,10 +1,47 @@
-# from .gitignore
-modules/yt_tmp.wav
-**/venv/
+# Python
 **/__pycache__/
-**/outputs/
-**/models/
+**/*.py[cod]
+**/*$py.class
+**/*.so
+**/.Python
+**/venv/
+**/env/
+**/.venv
 
-**/.idea
-**/.git
-**/.github
+# Models and outputs (large files)
+**/models/
+**/outputs/
+**/cache/
+modules/yt_tmp.wav
+
+# IDE
+**/.idea/
+**/.vscode/
+**/*.swp
+**/*.swo
+**/*~
+
+# Git
+**/.git/
+**/.gitignore
+**/.github/
+
+# Docker
+**/Dockerfile*
+**/docker-compose*.yaml
+**/.dockerignore
+
+# Documentation (keep LICENSE as it may be needed)
+**/README.md
+**/notebook/
+**/*.md
+
+# OS
+**/.DS_Store
+**/Thumbs.db
+
+# Build artifacts
+**/*.egg-info/
+**/dist/
+**/build/
+**/.pytest_cache/

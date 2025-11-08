@@ -1,36 +1,50 @@
+# syntax=docker/dockerfile:1.4
 FROM debian:bookworm-slim AS builder
 
-RUN apt-get update && \
-    apt-get install -y curl git python3 python3-pip python3-venv && \
-    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* && \
+# Install dependencies with cache mount for faster rebuilds
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends curl git python3 python3-pip python3-venv && \
+    rm -rf /var/lib/apt/lists/* && \
     mkdir -p /Whisper-WebUI
 
 WORKDIR /Whisper-WebUI
 
-COPY backend/ backend/
-COPY requirements.txt requirements.txt
+# Copy requirements first for better layer caching
+COPY requirements.txt .
+COPY backend/requirements-backend.txt backend/
 
-RUN python3 -m venv venv && \
+# Install dependencies with pip cache mount
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python3 -m venv venv && \
     . venv/bin/activate && \
-    pip install -U -r backend/requirements-backend.txt
+    pip install --upgrade pip setuptools wheel && \
+    pip install -r requirements.txt && \
+    pip install -r backend/requirements-backend.txt
 
 
 FROM debian:bookworm-slim AS runtime
 
-RUN apt-get update && \
-    apt-get install -y curl ffmpeg python3 && \
-    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+# Install runtime dependencies with cache mount
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends curl ffmpeg python3 && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /Whisper-WebUI
 
-COPY . .
+# Copy venv first (changes less frequently than source code)
 COPY --from=builder /Whisper-WebUI/venv /Whisper-WebUI/venv
+
+# Copy application source code last (changes most frequently)
+COPY . .
 
 VOLUME [ "/Whisper-WebUI/models" ]
 VOLUME [ "/Whisper-WebUI/outputs" ]
 VOLUME [ "/Whisper-WebUI/backend" ]
 
 ENV PATH="/Whisper-WebUI/venv/bin:$PATH"
-ENV LD_LIBRARY_PATH=/Whisper-WebUI/venv/lib64/python3.11/site-packages/nvidia/cublas/lib:/Whisper-WebUI/venv/lib64/python3.11/site-packages/nvidia/cudnn/lib
 
 ENTRYPOINT ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]

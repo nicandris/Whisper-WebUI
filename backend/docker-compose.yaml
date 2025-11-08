@@ -22,12 +22,13 @@ services:
 
     entrypoint: ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
-    # If you're not using Nvidia GPU, Update device to match yours.
+    # Intel Arc XPU support (no special Docker GPU configuration needed)
+    # For NVIDIA GPU support, uncomment the section below:
     # See more info at : https://docs.docker.com/compose/compose-file/deploy/#driver
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [ gpu ]
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [ gpu ]
