@@ -20,18 +20,36 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     python3 -m venv venv && \
     . venv/bin/activate && \
     pip install --upgrade pip setuptools wheel && \
-    pip install -r requirements.txt && \
-    pip install -r backend/requirements-backend.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r backend/requirements-backend.txt && \
+    # Aggressively clean up venv to reduce image size \
+    find venv -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true && \
+    find venv -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete 2>/dev/null || true && \
+    find venv -type d -name 'test*' -exec rm -rf {} + 2>/dev/null || true && \
+    find venv -type d -name 'tests' -exec rm -rf {} + 2>/dev/null || true && \
+    find venv -type f -name 'test_*.py' -delete 2>/dev/null || true && \
+    find venv -type d -name 'doc*' -exec rm -rf {} + 2>/dev/null || true && \
+    find venv -type f -name '*.md' -delete 2>/dev/null || true && \
+    find venv -type d -name '*.dist-info' -exec rm -rf {} + 2>/dev/null || true && \
+    find venv -type d -name '*.egg-info' -exec rm -rf {} + 2>/dev/null || true && \
+    find venv -type f -name '*.a' -delete 2>/dev/null || true && \
+    find venv -type f -name '*.o' -delete 2>/dev/null || true && \
+    find venv -type d -name 'include' -exec rm -rf {} + 2>/dev/null || true && \
+    # Remove pip, setuptools, wheel (not needed at runtime) \
+    rm -rf venv/lib/python*/site-packages/pip* 2>/dev/null || true && \
+    rm -rf venv/lib/python*/site-packages/setuptools* 2>/dev/null || true && \
+    rm -rf venv/lib/python*/site-packages/wheel* 2>/dev/null || true
 
 
-FROM debian:bookworm-slim AS runtime
+FROM python:3.11-slim AS runtime
 
-# Install runtime dependencies with cache mount
+# Install only runtime dependencies (no git, no build tools, no curl)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
-    apt-get install -y --no-install-recommends curl ffmpeg python3 && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends ffmpeg && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 WORKDIR /Whisper-WebUI
 
